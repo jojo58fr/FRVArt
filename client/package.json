@@ -1,7 +1,7 @@
 {
   "name": "frvart",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "prebuild": "node check-version.js",
@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@atproto/api": "^0.17.4",
     "@fortawesome/fontawesome-svg-core": "^6.5.2",
     "@fortawesome/free-regular-svg-icons": "^6.5.2",
     "@fortawesome/free-solid-svg-icons": "^6.5.2",
