@@ -1,0 +1,133 @@
+.video {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  color: #ffffff;
+  background: radial-gradient(circle at center, rgba(16, 16, 24, 0.2), rgba(0, 0, 0, 0.85));
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.video.has-image {
+  background: transparent;
+}
+
+.video.active {
+  transform: scale(1.01);
+  box-shadow: 0 28px 50px rgba(8, 8, 16, 0.55);
+}
+
+.media-wrapper {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: radial-gradient(circle at center, rgba(20, 20, 32, 0.7), rgba(2, 2, 6, 0.95));
+}
+
+.media-wrapper::before,
+.video::before {
+  content: '';
+  position: absolute;
+  inset: -25%;
+  background-image: var(--ambient-img);
+  background-size: cover;
+  background-position: center;
+  filter: blur(60px);
+  opacity: 0;
+  transform: scale(1.1);
+  transition: opacity 0.45s ease;
+  pointer-events: none;
+}
+
+.video::before {
+  inset: -35%;
+  filter: blur(120px);
+  z-index: 0;
+  opacity: 0;
+}
+
+.videoImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.92);
+  transform: scale(1.01);
+}
+
+.video-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(160deg, #1e1e2f, #12121c);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.video::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.05) 60%);
+  z-index: 1;
+}
+
+.video.has-image .media-wrapper::before,
+.video.has-image::before {
+  opacity: 0.55;
+}
+
+.video.active.has-image .media-wrapper::before,
+.video.active.has-image::before {
+  opacity: 0.8;
+}
+
+.multi-indicator {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 2;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  font-size: 0.85rem;
+  letter-spacing: 0.01em;
+}
+
+.bottom-controls {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 24px 18px 140px;
+  gap: 12px;
+}
+
+.bottom-controls .footer-left {
+  flex: 1;
+}
+
+.bottom-controls .footer-right {
+  width: 90px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .video {
+    min-height: 100vh;
+  }
+
+  .bottom-controls {
+    padding: 20px 16px 26px;
+  }
+}

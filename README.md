@@ -68,7 +68,7 @@ Les contributions sont les bienvenues. Merci de consulter le guide [CONTRIBUTING
 
 ## Support et communautes
 - Bluesky : https://bsky.app/profile/frvtubers.bsky.social
-- Discord FRVtubers : https://discord.gg/FRVtubers
+- Discord FRVtubers : https://discord.gg/meyHQYWvjU
 
 ## Licence
 La licence sera precisee dans une prochaine iteration. En attendant, les contributions sont acceptees sous reserve qu'elles soient compatibles avec une future licence open source.

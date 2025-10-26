@@ -97,6 +97,7 @@ function normalizeEmbedImages(embed) {
 function mapPost(post) {
   const record = post.record ?? {};
   const images = normalizeEmbedImages(post.embed);
+  const authorViewer = post.author?.viewer ?? {};
 
   return {
     uri: post.uri,
@@ -106,6 +107,12 @@ function mapPost(post) {
       handle: post.author?.handle,
       displayName: post.author?.displayName || post.author?.handle || 'Artiste',
       avatar: post.author?.avatar || '',
+      viewer: {
+        following: authorViewer.following || null,
+        followedBy: authorViewer.followedBy || null,
+        muted: Boolean(authorViewer.muted),
+        blockedBy: Boolean(authorViewer.blockedBy),
+      },
     },
     text: record.text || '',
     indexedAt: post.indexedAt || record.createdAt,
@@ -171,6 +178,10 @@ class BlueskyClient {
     this.agent = new BskyAgent({
       service: BLUESKY_SERVICE,
       persistSession: (_evt, session) => {
+        if (!this.rememberSession) {
+          saveJSON(SESSION_STORAGE_KEY, null);
+          return;
+        }
         if (session) {
           saveJSON(SESSION_STORAGE_KEY, session);
         } else {
@@ -182,6 +193,7 @@ class BlueskyClient {
     this.initialized = false;
     this.subscribers = new Set();
     this.pinCache = loadJSON(PIN_STORAGE_KEY, []);
+    this.rememberSession = true;
   }
 
   async init() {
@@ -221,22 +233,26 @@ class BlueskyClient {
     return Boolean(this.session?.accessJwt);
   }
 
-  async login(identifier, password) {
-    const session = await this.agent.login({ identifier, password });
-    this.session = session;
+  async login(identifier, password, { remember = true } = {}) {
+    this.rememberSession = Boolean(remember);
+    if (!this.rememberSession) {
+      saveJSON(SESSION_STORAGE_KEY, null);
+    }
+    await this.agent.login({ identifier, password });
+    this.session = this.agent.session;
     this.notify();
-    return session;
+    return this.session;
   }
 
   async logout() {
+    this.rememberSession = true;
+    this.session = null;
+    saveJSON(SESSION_STORAGE_KEY, null);
+    this.notify();
     try {
       await this.agent.logout();
     } catch (_err) {
       // Ignore network/logout errors
-    } finally {
-      this.session = null;
-      saveJSON(SESSION_STORAGE_KEY, null);
-      this.notify();
     }
   }
 
@@ -469,6 +485,27 @@ class BlueskyClient {
     }
   }
 
+  async toggleFollow(author) {
+    if (!this.isAuthenticated()) {
+      throw new Error('AUTH_REQUIRED');
+    }
+    await this.init();
+    if (!author?.did) {
+      throw new Error('INVALID_AUTHOR');
+    }
+    const viewerState = author.viewer ?? {};
+    if (viewerState.following) {
+      await this.agent.deleteFollow(viewerState.following);
+      return {
+        followingUri: null,
+      };
+    }
+    const response = await this.agent.follow(author.did);
+    return {
+      followingUri: response.uri,
+    };
+  }
+
   updateLikesCache(uri, viewerUpdate) {
     const updatePin = (pin) => {
       if (pin.uri !== uri) return pin;
@@ -487,6 +524,30 @@ class BlueskyClient {
     this.notify();
   }
 
+  updateFollowCache(authorDid, followingUri) {
+    if (!authorDid) {
+      return;
+    }
+    const updatePin = (pin) => {
+      if (pin.author?.did !== authorDid) {
+        return pin;
+      }
+      return {
+        ...pin,
+        author: {
+          ...pin.author,
+          viewer: {
+            ...(pin.author.viewer || {}),
+            following: followingUri || null,
+          },
+        },
+      };
+    };
+    this.pinCache = this.pinCache.map(updatePin);
+    saveJSON(PIN_STORAGE_KEY, this.pinCache);
+    this.notify();
+  }
+
   getPinnedPosts() {
     return [...this.pinCache];
   }
@@ -498,7 +559,10 @@ class BlueskyClient {
     }
     const cloned = {
       ...post,
-      author: { ...(post.author || {}) },
+      author: {
+        ...(post.author || {}),
+        viewer: { ...(post.author?.viewer || {}) },
+      },
       images: Array.isArray(post.images) ? [...post.images] : [],
       viewer: { ...(post.viewer || {}) },
       tags: Array.isArray(post.tags) ? [...post.tags] : [],
@@ -514,6 +578,49 @@ class BlueskyClient {
     this.pinCache = this.pinCache.filter((item) => item.uri !== uri);
     saveJSON(PIN_STORAGE_KEY, this.pinCache);
     this.notify();
+  }
+
+  async fetchComments(uri, { depth = 1 } = {}) {
+    if (!uri) {
+      return { root: null, comments: [] };
+    }
+    await this.init();
+    try {
+      const response = await this.agent.app.bsky.feed.getPostThread({
+        uri,
+        depth: Math.max(depth, 1) + 1,
+        parentHeight: 0,
+      });
+      const data = unwrapData(response);
+      const thread = data.thread ?? data;
+      if (!thread?.post) {
+        return { root: null, comments: [] };
+      }
+      const root = mapPost(thread.post ?? thread);
+      const comments = [];
+      const traverse = (nodes, level) => {
+        if (!Array.isArray(nodes)) {
+          return;
+        }
+        nodes.forEach((node) => {
+          if (!node?.post) {
+            return;
+          }
+          const mapped = mapPost(node.post);
+          mapped.replyLevel = level;
+          mapped.replies = node.replies?.length ?? 0;
+          comments.push(mapped);
+          if (level < depth) {
+            traverse(node.replies, level + 1);
+          }
+        });
+      };
+      traverse(thread.replies, 1);
+      return { root, comments };
+    } catch (err) {
+      console.error('[FRVArt] Unable to fetch comments', err);
+      throw err;
+    }
   }
 }
 

@@ -43,6 +43,6 @@ Merci de votre interet pour FRVArt. Ce document explique comment proposer des am
 
 ## Support
 - Bluesky: https://bsky.app/profile/frvtubers.bsky.social
-- Discord FRVtubers: https://discord.gg/FRVtubers
+- Discord FRVtubers: https://discord.gg/meyHQYWvjU
 
 Merci d'aider a faire grandir FRVArt !

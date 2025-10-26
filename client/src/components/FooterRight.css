@@ -1,64 +1,103 @@
 .footer-right {
-  z-index: 100;
-  color: #fff;
-  margin-right: 5px;
-  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  z-index: 90;
 }
 
 .sidebar-icon {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
   align-items: center;
-  text-align: center;
-  margin-top: 5px;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #fdfdff;
+  background: rgba(10, 10, 18, 0.55);
+  border-radius: 18px;
+  border: none;
+  padding: 10px 14px;
+  min-width: 58px;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+
+.sidebar-icon.avatar {
+  background: none;
+  padding: 0;
+  min-width: auto;
+  cursor: default;
+}
+
+.sidebar-icon span {
+  font-size: 0.78rem;
 }
 
 .sidebar-icon .userprofile {
-  border-radius: 50%;
-  border: #fff 2px solid;
-  background-color: #fff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  margin-bottom: 25px;
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.1);
+  margin-bottom: 0;
 }
 
-.sidebar-icon .useradd {
-  border-radius: 50%;
-  background-color: #fff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  margin-top: -30px;
-  margin-bottom: 15px;
+.sidebar-icon.follow {
+  background: linear-gradient(150deg, rgba(120, 108, 255, 0.85), rgba(180, 118, 255, 0.78));
+  color: #fefcff;
+  border: 1px solid rgba(211, 188, 255, 0.6);
 }
 
-.sidebar-icon p{
-  font-size: 14px;
-  font-weight: 500;
-  margin-top: 5px;
-}
-.record {
-  animation: spinTheRecord infinite 5s linear;
-  filter: invert(1);
+.sidebar-icon.follow.active {
+  background: rgba(117, 96, 255, 0.22);
+  color: #dcd6ff;
+  border-color: rgba(117, 96, 255, 0.45);
 }
 
-.record img {
-  width: 35px;
-  height: 35px;
-  padding: 5px;;
-  border-radius: 50px;
-  background-color: #b3afaf;
+.sidebar-icon.like.active {
+  background: rgba(255, 92, 143, 0.28);
+  color: #ff99c7;
 }
 
-@keyframes spinTheRecord {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
+.sidebar-icon.pin.active {
+  background: rgba(117, 96, 255, 0.24);
+  color: #a69bff;
+}
+
+.footer-right button.sidebar-icon,
+.footer-right a.sidebar-icon {
+  cursor: pointer;
+}
+
+.footer-right button.sidebar-icon:hover,
+.footer-right a.sidebar-icon:hover {
+  transform: translateY(-2px);
+  background: rgba(24, 24, 40, 0.6);
+}
+
+.footer-right button.sidebar-icon.follow:hover {
+  background: linear-gradient(150deg, rgba(132, 120, 255, 0.95), rgba(193, 138, 255, 0.88));
+}
+
+.footer-right button.sidebar-icon.follow.active:hover {
+  background: rgba(117, 96, 255, 0.28);
+}
+
+.footer-right a.sidebar-icon {
+  text-decoration: none;
+}
+
+.footer-right button.sidebar-icon:focus-visible,
+.footer-right a.sidebar-icon:focus-visible {
+  outline: 2px solid #755fff;
+  outline-offset: 3px;
+}
+
+@media (max-width: 480px) {
+  .sidebar-icon {
+    min-width: 52px;
+    padding: 8px 10px;
+    border-radius: 16px;
   }
 }

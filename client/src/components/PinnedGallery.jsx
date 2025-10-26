@@ -1,9 +1,22 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faThumbTack, faHeart, faXmark } from '@fortawesome/free-solid-svg-icons';
+import {
+  faThumbTack,
+  faHeart,
+  faXmark,
+  faArrowUpRightFromSquare,
+} from '@fortawesome/free-solid-svg-icons';
 import './PinnedGallery.css';
 
-function PinnedGallery({ open, onClose, pins, onUnpin, onLike, isAuthenticated }) {
+function PinnedGallery({
+  open,
+  onClose,
+  pins,
+  onUnpin,
+  onLike,
+  onOpenPost,
+  isAuthenticated,
+}) {
   if (!open) {
     return null;
   }
@@ -17,7 +30,7 @@ function PinnedGallery({ open, onClose, pins, onUnpin, onLike, isAuthenticated }
         <header>
           <h2>
             <FontAwesomeIcon icon={faThumbTack} />
-            <span>Mes oeuvres épinglées</span>
+            <span>Mes épinglées</span>
           </h2>
           <button
             type="button"
@@ -28,6 +41,11 @@ function PinnedGallery({ open, onClose, pins, onUnpin, onLike, isAuthenticated }
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </header>
+        <div className="pinned-info">
+          ⚠️ Version 1.0.0 - tes épingles sont stockées localement sur cet appareil.
+          Elles peuvent disparaître si tu effaces le cache ou changes de
+          navigateur.
+        </div>
         {pins.length === 0 ? (
           <p className="pinned-empty">
             Tu n&apos;as pas encore épinglé d&apos;oeuvre. Utilise l&apos;icône
@@ -55,6 +73,16 @@ function PinnedGallery({ open, onClose, pins, onUnpin, onLike, isAuthenticated }
                     </div>
                     <p className="pinned-text">{post.text}</p>
                     <div className="pinned-actions">
+                      {onOpenPost ? (
+                        <button
+                          type="button"
+                          className="pinned-open-post"
+                          onClick={() => onOpenPost(post)}
+                        >
+                          <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
+                          <span>Voir sur Bluesky</span>
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         className={`pinned-like ${

@@ -1,26 +1,30 @@
 import React from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMusic } from '@fortawesome/free-solid-svg-icons';
 import './FooterLeft.css';
 
-export default function FooterLeft(props) {
-  const { username, description, song } = props;
+export default function FooterLeft({ author, text, indexedAt }) {
+  const displayName = author?.displayName || author?.handle || 'Artiste';
+  const handle = author?.handle ? `@${author.handle}` : '';
+
+  const formattedDate = indexedAt
+    ? new Date(indexedAt).toLocaleString('fr-FR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        day: '2-digit',
+        month: 'short',
+      })
+    : '';
 
   return (
-    <div className="footer-container">
-      <div className="footer-left">
-        <div className="text">
-          <h3>@{username}</h3>
-          <p>{description}</p>
-          <div className="ticker">
-            {/* <FontAwesomeIcon icon={faMusic} style={{ width: '30px' }} /> */}
-            {/* eslint-disable-next-line jsx-a11y/no-distracting-elements */}
-            {/* <marquee direction="left" scrollamount="2">
-              <span>{song}</span>
-            </marquee> */}
-          </div>
+    <div className="footer-left">
+      <div className="author">
+        {/* {avatar ? <img src={avatar} alt={displayName} /> : null} */}
+        <div>
+          <span className="display-name">{displayName}</span>
+          {handle ? <span className="handle">{handle}</span> : null}
         </div>
       </div>
+      {text ? <p className="post-text">{text}</p> : null}
+      {formattedDate ? <span className="post-date">{formattedDate}</span> : null}
     </div>
   );
 }

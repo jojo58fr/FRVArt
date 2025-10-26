@@ -1,0 +1,115 @@
+.changelog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 6, 15, 0.7);
+  backdrop-filter: blur(6px);
+  padding: 24px;
+}
+
+.changelog-panel {
+  width: min(520px, 92vw);
+  max-height: min(80vh, 720px);
+  background: linear-gradient(165deg, rgba(18, 20, 42, 0.95), rgba(8, 8, 18, 0.95));
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 36px 70px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  color: #f5f5ff;
+  overflow: hidden;
+}
+
+.changelog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 26px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(19, 18, 40, 0.85);
+}
+
+.changelog-header h2 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.2rem;
+}
+
+.changelog-version {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: #cbccdf;
+}
+
+.changelog-close {
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.changelog-content {
+  padding: 22px 26px 28px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.changelog-entry {
+  background: rgba(12, 12, 26, 0.78);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.changelog-entry-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.changelog-entry-version {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #fefeff;
+  background: rgba(99, 90, 255, 0.22);
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+
+.changelog-entry-date {
+  font-size: 0.82rem;
+  color: #adadc6;
+}
+
+.changelog-entry ul {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #d7d7ef;
+}
+
+@media (max-width: 540px) {
+  .changelog-backdrop {
+    padding: 12px;
+  }
+
+  .changelog-panel {
+    width: 100%;
+    max-height: none;
+  }
+}

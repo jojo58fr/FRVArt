@@ -1,51 +1,111 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCirclePlus, faCircleCheck, faHeart, faCommentDots, faBookmark, faShare } from '@fortawesome/free-solid-svg-icons';
+import {
+  faHeart,
+  faCommentDots,
+  faShareNodes,
+  faThumbTack,
+  faArrowUpRightFromSquare,
+  faUserPlus,
+  faCircleCheck,
+} from '@fortawesome/free-solid-svg-icons';
 import './FooterRight.css';
 
-function FooterRight({ likes, comments, saves, shares, profilePic }) {
-  const [liked, setLiked] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [userAddIcon, setUserAddIcon] = useState(faCirclePlus);
+const formatCount = (count = 0) => {
+  if (count >= 1000000) {
+    return `${(count / 1000000).toFixed(1)}M`;
+  }
+  if (count >= 1000) {
+    return `${(count / 1000).toFixed(1)}K`;
+  }
+  return count.toString();
+};
 
-  const handleUserAddClick = () => {
-    setUserAddIcon(faCircleCheck);
-    setTimeout(() => {
-      setUserAddIcon(null);
-    }, 3000); // Change the delay time (in milliseconds) as needed
-  };
-
-  // Function to convert likes count to a number
-  const parseLikesCount = (count) => {
-    if (typeof count === 'string') {
-      if (count.endsWith('K')) {
-        return parseFloat(count) * 1000;
-      }
-      return parseInt(count);
-    }
-    return count;
-  };
-
-  // Function to format likes count
-  const formatLikesCount = (count) => {
-    if (count >= 10000) {
-      return (count / 1000).toFixed(1) + 'K';
-    }
-    return count;
-  };
-
-  const handleLikeClick = () => {
-    setLiked((prevLiked) => !prevLiked);
-  };
+function FooterRight({
+  author,
+  likeCount = 0,
+  replyCount = 0,
+  repostCount = 0,
+  liked = false,
+  pinned = false,
+  onLike,
+  onComment,
+  onShare,
+  onPin,
+  onLoginRequest,
+  postLink,
+  onFollow,
+  viewerDid,
+}) {
+  const avatar = author?.avatar || '';
+  const isFollowing = Boolean(author?.viewer?.following);
+  const isOwnProfile = Boolean(viewerDid && author?.did && viewerDid === author.did);
+  const showFollow = Boolean(onFollow) && !isOwnProfile;
 
   return (
     <div className="footer-right">
-      <div className="sidebar-icon">
-        {profilePic ? (
-          // Displaying the user profile picture
-          <img src={profilePic} className='userprofile' alt='Profile' style={{ width: '45px', height: '45px', color: '#616161' }} />
+      <div className="sidebar-icon avatar">
+        {avatar ? (
+          <img src={avatar} className="userprofile" alt={author?.handle} />
         ) : null}
       </div>
+      {showFollow ? (
+        <button
+          type="button"
+          className={`sidebar-icon follow ${isFollowing ? 'active' : ''}`}
+          onClick={onFollow}
+          aria-pressed={isFollowing}
+          aria-label={isFollowing ? 'Ne plus suivre cet artiste' : 'Suivre cet artiste'}
+          title={isFollowing ? 'Ne plus suivre' : 'Suivre'}
+        >
+          <FontAwesomeIcon icon={isFollowing ? faCircleCheck : faUserPlus} />
+          <span>{isFollowing ? 'Suivi' : 'Suivre'}</span>
+        </button>
+      ) : null}
+      <button
+        type="button"
+        className={`sidebar-icon like ${liked ? 'active' : ''}`}
+        onClick={onLike || onLoginRequest}
+        aria-label="J'aime"
+      >
+        <FontAwesomeIcon icon={faHeart} />
+        <span>{formatCount(likeCount)}</span>
+      </button>
+      <button
+        type="button"
+        className="sidebar-icon"
+        onClick={onComment}
+        aria-label="Afficher les commentaires"
+      >
+        <FontAwesomeIcon icon={faCommentDots} />
+        <span>{formatCount(replyCount)}</span>
+      </button>
+      <button
+        type="button"
+        className="sidebar-icon"
+        onClick={onShare}
+        aria-label="Partager"
+      >
+        <FontAwesomeIcon icon={faShareNodes} />
+        <span>{formatCount(repostCount)}</span>
+      </button>
+      <button
+        type="button"
+        className={`sidebar-icon pin ${pinned ? 'active' : ''}`}
+        onClick={onPin}
+        aria-label="Epingler cette oeuvre"
+      >
+        <FontAwesomeIcon icon={faThumbTack} />
+      </button>
+      <a
+        href={postLink}
+        className="sidebar-icon external"
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Ouvrir sur Bluesky"
+      >
+        <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
+      </a>
     </div>
   );
 }

@@ -1,48 +1,51 @@
-.footer-container {
+.footer-left {
   display: flex;
   flex-direction: column;
-  margin-bottom: 60px;
+  gap: 12px;
+  color: #f7f7fc;
 }
 
-.footer-left {
-  position: relative;
-  color: white;
-  flex-grow: 1;
-  pointer-events: none;
-  display: flex;
-  margin-left: 5px;
-}
-
-.ticker {
-  height: fit-content;
-  width: 100%;
+.author {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
-.ticker marquee {
-  display: flex;
-  align-items: center;
-  width: 100%;
+.author img {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  object-fit: cover;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
 }
 
-.text {
-  width: 100%;
-}
-
-.text h3 {
-  font-size: 18px;
+.display-name {
+  font-size: 1rem;
   font-weight: 700;
-  margin-bottom: 5px;
+  letter-spacing: 0.03em;
+  display: block;
 }
 
-.text p {
-  font-size: 14px;
-  font-weight: 500;
+.handle {
+  font-size: 0.88rem;
+  color: #b8b8d0;
 }
 
-.text span {
-  font-size: 12px;
-  font-weight: 400;
-  color: #fff;
+.post-text {
+  font-size: 0.95rem;
+  line-height: 1.4;
+  margin: 0;
+  max-width: 85%;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.35);
+}
+
+.post-date {
+  font-size: 0.78rem;
+  color: #a4a4bd;
+}
+
+@media (max-width: 480px) {
+  .post-text {
+    max-width: 100%;
+  }
 }
