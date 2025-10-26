@@ -65,6 +65,41 @@ const shufflePosts = (items) => {
   return copy;
 };
 
+const interleavePostsByAuthor = (items) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    return [];
+  }
+
+  // Group posts by author DID
+  const groups = {};
+  items.forEach((post) => {
+    const authorDid = post.author?.did;
+    if (!authorDid) return;
+    if (!groups[authorDid]) {
+      groups[authorDid] = [];
+    }
+    groups[authorDid].push(post);
+  });
+
+  // Get all group keys
+  const authorKeys = Object.keys(groups);
+
+  // Interleave: take one from each author in round-robin
+  const result = [];
+  let hasMore = true;
+  while (hasMore) {
+    hasMore = false;
+    for (const key of authorKeys) {
+      if (groups[key].length > 0) {
+        result.push(groups[key].shift());
+        hasMore = true;
+      }
+    }
+  }
+
+  return result;
+};
+
 function CloneTikTok() {
   const { client, isAuthenticated, pins, session } = useContext(BlueskyContext);
   const viewerDid = session?.did || null;
@@ -162,23 +197,12 @@ function CloneTikTok() {
           : [];
 
         if (initialPosts.length) {
-          setPosts(initialPosts);
+          const interleavedPosts = interleavePostsByAuthor(initialPosts);
+          setPosts(interleavedPosts);
           setCursor(data.cursor || null);
           setHasMore(true);
           setIsRetrying(false);
           clearRetryTimeout();
-        } else {
-          setPosts([]);
-          setCursor(data.cursor || null);
-          setHasMore(true);
-          setIsRetrying(true);
-          clearRetryTimeout();
-          if (!retryTimeoutRef.current) {
-            retryTimeoutRef.current = setTimeout(() => {
-              retryTimeoutRef.current = null;
-              fetchInitialFeed();
-            }, RETRY_DELAY_MS);
-          }
         }
       } catch (err) {
         setError('Impossible de recuperer le flux Bluesky. Nouvelle tentative...');
@@ -257,10 +281,10 @@ function CloneTikTok() {
         setIsRetrying(false);
         setPosts((prev) => {
           const combined = [...prev, ...postsToAppend];
-          if (combined.length > FEED_BUFFER_LIMIT) {
-            return combined.slice(combined.length - FEED_BUFFER_LIMIT);
-          }
-          return combined;
+          const trimmed = combined.length > FEED_BUFFER_LIMIT
+            ? combined.slice(combined.length - FEED_BUFFER_LIMIT)
+            : combined;
+          return interleavePostsByAuthor(trimmed);
         });
       } catch (_err) {
         setHasMore(true);

@@ -46,7 +46,7 @@ function LoginDialog({ open, onClose, onSubmit, loading, error }) {
           </button>
         </header>
         <p className="login-hint">
-          Utilise ton identifiant Bluesky et un app password (paramètres > App
+          Utilise ton identifiant Bluesky et un app password (paramètres &gt; App
           passwords). Tes informations restent sur ton appareil.
         </p>
         <form onSubmit={handleSubmit}>
