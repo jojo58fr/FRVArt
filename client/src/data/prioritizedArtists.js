@@ -50,7 +50,15 @@ const prioritizedArtists = [
   'did:plc:hwttzphqlzptasr6fk64xlgw',
   'did:plc:j6kyfywtdutql6yexf7m32vs',
   'did:plc:b7fds4doblstacd3u55hsoj5',
-  'did:plc:qqfmrhnz6gstwtiurpmcikkv'
+  'did:plc:qqfmrhnz6gstwtiurpmcikkv',
+  'did:plc:bb7snbqjeyc64ag5drs54whp',
+  'did:plc:724rlusg5mpnrzvhzbrr4h5s',
+  'did:plc:qbc5v7mpedol7hxop66yzacb',
+  'did:plc:zxofi2byji5j6y45uqsmhe5v',
+  'did:plc:hczgurbgnuv4r4x42rqbpg54',
+  'did:plc:ar34njksv7sxmta6gptxwxnc',
+  'did:plc:c4gdsumtb77f6y6sxncvvltj',
+  'did:plc:mpqpzrxa4ysdswaj37pyxaoh'
 ];
 
 export default prioritizedArtists;

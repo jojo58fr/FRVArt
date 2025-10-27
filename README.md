@@ -1,5 +1,9 @@
 # FRVArt
 
+<img src="./doc/images/overview/repository-banner.png"/>
+
+[:computer: Releases](https://github.com/jojo58fr/FRVArt/releases) | [:bug: Report an issue](https://github.com/jojo58fr/FRVArt/issues)
+
 FRVArt est une vitrine communautaire open source dediee aux creations VTubing francophones publiees sur Bluesky. L'application presente un flux type TikTok optimise pour l'exploration rapide des oeuvres, avec epingles locales, panneau de commentaires, et outils de partage.
 
 ## Version
@@ -70,8 +74,13 @@ Les nouveautes sont maintenues dans [`client/CHANGELOG.md`](client/CHANGELOG.md)
 Les contributions sont les bienvenues. Merci de consulter le guide [CONTRIBUTING.md](CONTRIBUTING.md) pour le detail du flux de travail, des normes de code et des attentes en matiere de tests.
 
 ## Support et communautes
-- Bluesky : https://bsky.app/profile/frvtubers.bsky.social
+- Bluesky : https://bsky.app/profile/frvtubers.com
 - Discord FRVtubers : https://discord.gg/meyHQYWvjU
 
+## Contributing & Support
+- Suggestions / issues: https://github.com/jojo58fr/FRVArt/issues
+- Contact Discord: TakuDev
+- Contact: Joachim Miens – contact@joachim-miens.com
+
 ## Licence
-La licence sera precisee dans une prochaine iteration. En attendant, les contributions sont acceptees sous reserve qu'elles soient compatibles avec une future licence open source.
+La licence est sous GPLV3. Vous pouvez consulter la licence complète ici: [LICENCE.md](LICENCE.md). Un résumé de la licence se trouve ici: [GPLV3.md](GPLV3.md)
