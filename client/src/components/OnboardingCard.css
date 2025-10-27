@@ -228,33 +228,34 @@
 }
 
 .onboarding-cta.primary {
-  background: linear-gradient(135deg, rgba(120, 108, 255, 0.95), rgba(180, 118, 255, 0.9));
-  color: #ffffff;
-  box-shadow: 0 18px 34px rgba(72, 60, 180, 0.35);
+  background: var(--accent-gradient);
+  color: var(--accent-on-color);
+  box-shadow: 0 20px 38px rgba(33, 26, 120, 0.45);
 }
 
 .onboarding-cta.primary:hover {
   transform: translateY(-1px);
-  background: linear-gradient(135deg, rgba(132, 120, 255, 0.98), rgba(192, 128, 255, 0.95));
+  background: var(--accent-gradient-hover);
 }
 
 .onboarding-cta.secondary {
-  background: rgba(255, 255, 255, 0.16);
-  color: #f3f3ff;
+  background: var(--surface-glass-strong);
+  color: #ececff;
+  border: 1px solid var(--surface-outline-strong);
 }
 
 .onboarding-cta.secondary:hover {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(18, 18, 40, 0.78);
 }
 
 .onboarding-cta.ghost {
   background: transparent;
-  color: rgba(242, 242, 255, 0.9);
-  border: 1px solid rgba(242, 242, 255, 0.35);
+  color: rgba(242, 242, 255, 0.92);
+  border: 1px solid rgba(242, 242, 255, 0.45);
 }
 
 .onboarding-cta.ghost:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(22, 22, 40, 0.52);
 }
 
 .onboarding-cta:focus-visible {

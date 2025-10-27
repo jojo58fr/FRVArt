@@ -3,6 +3,7 @@
   width: 100%;
   min-height: 100vh;
   scroll-snap-align: start;
+  scroll-snap-stop: always;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -25,6 +26,7 @@
   inset: 0;
   overflow: hidden;
   background: radial-gradient(circle at center, rgba(20, 20, 32, 0.7), rgba(2, 2, 6, 0.95));
+  touch-action: pan-y;
 }
 
 .media-wrapper::before,
@@ -88,16 +90,13 @@
   opacity: 0.8;
 }
 
-.multi-indicator {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  z-index: 2;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.55);
-  font-size: 0.85rem;
-  letter-spacing: 0.01em;
+.video.fit-contain .media-wrapper {
+  background: radial-gradient(circle at center, rgba(10, 10, 20, 0.85), rgba(2, 2, 6, 0.95));
+}
+
+.video.fit-contain .videoImg {
+  object-fit: contain;
+  background-color: rgba(6, 6, 12, 0.92);
 }
 
 .bottom-controls {
@@ -128,6 +127,62 @@
   }
 
   .bottom-controls {
-    padding: 20px 16px 26px;
+    padding: 0px 15px 10vh
+  }
+}
+
+.artcard-fullscreen {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 6, 16, 0.92);
+  backdrop-filter: blur(18px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  z-index: 1400;
+  animation: fullscreenFade 0.2s ease;
+}
+
+.artcard-fullscreen img {
+  max-width: min(96vw, 1280px);
+  max-height: 92vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 18px;
+  box-shadow: 0 28px 60px rgba(4, 4, 12, 0.65);
+}
+
+.artcard-fullscreen .fullscreen-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  background: rgba(8, 8, 18, 0.75);
+  color: #f5f5ff;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.artcard-fullscreen .fullscreen-close:hover {
+  transform: translateY(-1px);
+  background: rgba(18, 18, 32, 0.85);
+}
+
+.artcard-fullscreen .fullscreen-close:focus-visible {
+  outline: 2px solid rgba(180, 160, 255, 0.85);
+  outline-offset: 3px;
+}
+
+@keyframes fullscreenFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }

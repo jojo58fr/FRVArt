@@ -44,6 +44,42 @@
   color: #a4a4bd;
 }
 
+.post-date-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.post-indicators {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.post-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.24);
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+  opacity: 0.65;
+}
+
+.post-indicator.active {
+  background: #f7f7fc;
+  opacity: 1;
+  transform: scale(1.25);
+}
+
+.post-indicator:focus-visible {
+  outline: 2px solid rgba(150, 150, 255, 0.75);
+  outline-offset: 2px;
+}
+
 @media (max-width: 480px) {
   .post-text {
     max-width: 100%;

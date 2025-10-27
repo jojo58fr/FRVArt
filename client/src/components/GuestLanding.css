@@ -55,24 +55,25 @@
 }
 
 .guest-btn.primary {
-  background: linear-gradient(130deg, rgba(98, 88, 255, 0.92), rgba(180, 98, 255, 0.92));
-  color: #fbfbff;
-  box-shadow: 0 16px 28px rgba(54, 41, 153, 0.3);
+  background: var(--accent-gradient);
+  color: var(--accent-on-color);
+  box-shadow: 0 20px 38px rgba(33, 26, 120, 0.45);
 }
 
 .guest-btn.primary:hover {
   transform: translateY(-1px);
-  background: linear-gradient(130deg, rgba(120, 109, 255, 0.98), rgba(200, 118, 255, 0.98));
+  background: var(--accent-gradient-hover);
 }
 
 .guest-btn.ghost {
-  background: rgba(255, 255, 255, 0.12);
-  color: #f2f2ff;
+  background: var(--surface-glass-strong);
+  color: #ececff;
+  border: 1px solid var(--surface-outline-strong);
 }
 
 .guest-btn.ghost:hover {
   transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(18, 18, 40, 0.78);
 }
 
 .guest-version {

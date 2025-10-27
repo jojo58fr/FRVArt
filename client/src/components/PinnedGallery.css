@@ -124,17 +124,18 @@
 }
 
 .pinned-unpin {
-  border: none;
-  background: rgba(255, 255, 255, 0.12);
-  color: inherit;
+  border: 1px solid var(--surface-outline-strong);
+  background: var(--surface-glass-strong);
+  color: var(--accent-on-color);
   border-radius: 999px;
   padding: 4px 12px;
   font-size: 0.85rem;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
 
 .pinned-unpin:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(18, 18, 40, 0.78);
 }
 
 .pinned-text {
@@ -155,30 +156,36 @@
 
 .pinned-open-post {
   border: none;
-  background: rgba(255, 255, 255, 0.12);
-  color: inherit;
+  background: var(--accent-gradient);
+  color: var(--accent-on-color);
   border-radius: 12px;
   padding: 6px 12px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  box-shadow: 0 16px 28px rgba(33, 26, 120, 0.4);
 }
 
 .pinned-open-post:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--accent-gradient-hover);
 }
 
 .pinned-like {
-  border: none;
-  background: rgba(255, 255, 255, 0.1);
-  color: inherit;
+  border: 1px solid var(--surface-outline-strong);
+  background: var(--surface-glass-strong);
+  color: var(--accent-on-color);
   border-radius: 12px;
   padding: 6px 12px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.pinned-like:hover {
+  background: rgba(18, 18, 40, 0.78);
 }
 
 .pinned-like span {
@@ -186,8 +193,8 @@
 }
 
 .pinned-like.active {
-  background: rgba(255, 92, 143, 0.22);
-  color: #ff92c0;
+  background: rgba(150, 32, 74, 0.78);
+  color: #ffd6e6;
 }
 
 .pinned-login-hint {

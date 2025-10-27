@@ -22,10 +22,14 @@ function LoginDialog({ open, onClose, onSubmit, loading, error }) {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (identifier.trim() && password.trim()) {
+    const trimmedIdentifier = identifier.trim();
+    const normalizedIdentifier = trimmedIdentifier.replace(/^@+/, '');
+    const trimmedPassword = password.trim();
+
+    if (normalizedIdentifier && trimmedPassword) {
       onSubmit({
-        identifier: identifier.trim(),
-        password: password.trim(),
+        identifier: normalizedIdentifier,
+        password: trimmedPassword,
         remember: !dontRemember,
       });
     }

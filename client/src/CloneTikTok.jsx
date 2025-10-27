@@ -15,6 +15,7 @@ import LoginDialog from './components/LoginDialog';
 import PinnedGallery from './components/PinnedGallery';
 import CommentsPanel from './components/CommentsPanel';
 import ChangelogDialog from './components/ChangelogDialog';
+import FullscreenViewer from './components/FullscreenViewer';
 import onboardingCards from './data/onboardingCards';
 import changelogEntries, { latestVersion as changelogLatestVersion } from './data/changelog.js';
 
@@ -100,6 +101,22 @@ const interleavePostsByAuthor = (items) => {
   return result;
 };
 
+const sortPostsByDateDesc = (items) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    return [];
+  }
+  return [...items].sort((a, b) => {
+    const timeA = a?.indexedAt ? new Date(a.indexedAt).getTime() : 0;
+    const timeB = b?.indexedAt ? new Date(b.indexedAt).getTime() : 0;
+    if (timeB !== timeA) {
+      return timeB - timeA;
+    }
+    const uriA = a?.uri ? String(a.uri) : '';
+    const uriB = b?.uri ? String(b.uri) : '';
+    return uriA.localeCompare(uriB);
+  });
+};
+
 function CloneTikTok() {
   const { client, isAuthenticated, pins, session } = useContext(BlueskyContext);
   const viewerDid = session?.did || null;
@@ -125,6 +142,10 @@ function CloneTikTok() {
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [commentsError, setCommentsError] = useState('');
   const [shareMessage, setShareMessage] = useState('');
+  const [mediaFitModes, setMediaFitModes] = useState({});
+  const [mediaActiveIndexes, setMediaActiveIndexes] = useState({});
+  const [fullscreenPostKey, setFullscreenPostKey] = useState(null);
+  const [fullscreenMediaIndex, setFullscreenMediaIndex] = useState(0);
 
   const containerRef = useRef(null);
   const cardRefs = useRef([]);
@@ -135,6 +156,120 @@ function CloneTikTok() {
   const showOnboardingFeed = !isAuthenticated;
   const displayPosts = showOnboardingFeed ? onboardingCards : posts;
   const displayCount = displayPosts.length;
+  const activePost = displayPosts[activeIndex] || null;
+  const activeKey = activePost
+    ? activePost.uri || `onboarding-${activeIndex}`
+    : null;
+  const activeMediaIndex = activeKey ? mediaActiveIndexes[activeKey] || 0 : 0;
+  const activeMediaData = useMemo(() => {
+    if (!activePost || activePost.onboarding) {
+      return {
+        src: '',
+        alt: activePost?.text || activePost?.author?.displayName || '',
+        hasMedia: false,
+        index: 0,
+      };
+    }
+    const images = Array.isArray(activePost.images)
+      ? activePost.images.filter(Boolean)
+      : [];
+    const maxIndex = images.length > 0 ? images.length - 1 : 0;
+    const normalizedIndex = Math.min(
+      Math.max(0, activeMediaIndex),
+      maxIndex,
+    );
+    const selectedImage = images[normalizedIndex] || null;
+    const src =
+      selectedImage?.fullsize ||
+      selectedImage?.thumb ||
+      activePost.author?.avatar ||
+      '';
+    const alt =
+      selectedImage?.alt ||
+      activePost.text ||
+      activePost.author?.displayName ||
+      activePost.author?.handle ||
+      'Illustration Bluesky';
+    return {
+      src,
+      alt,
+      hasMedia: Boolean(src),
+      index: normalizedIndex,
+    };
+  }, [activePost, activeMediaIndex]);
+  const activeHasMedia = activeMediaData.hasMedia;
+  const activeMediaSource = activeMediaData.src;
+  const activeMediaResolvedIndex = activeMediaData.index || 0;
+  const activeFitMode = activeKey ? mediaFitModes[activeKey] || 'cover' : 'cover';
+
+  useEffect(() => {
+    setMediaActiveIndexes((prev) => {
+      if (!prev || !Object.keys(prev).length) {
+        return posts.length ? prev : {};
+      }
+      if (!posts.length) {
+        return Object.keys(prev).length ? {} : prev;
+      }
+      const postsByUri = new Map(
+        posts
+          .filter((postItem) => postItem?.uri)
+          .map((postItem) => [postItem.uri, postItem]),
+      );
+      if (!postsByUri.size) {
+        return Object.keys(prev).length ? {} : prev;
+      }
+      let changed = false;
+      const next = {};
+      Object.entries(prev).forEach(([key, value]) => {
+        const postItem = postsByUri.get(key);
+        if (!postItem) {
+          changed = true;
+          return;
+        }
+        const normalizedValue = Number.isFinite(value)
+          ? Math.max(0, Math.floor(value))
+          : 0;
+        const images = Array.isArray(postItem.images)
+          ? postItem.images.filter(Boolean)
+          : [];
+        const maxIndex = images.length > 0 ? images.length - 1 : 0;
+        const clamped = Math.min(Math.max(0, normalizedValue), maxIndex);
+        if (clamped > 0) {
+          next[key] = clamped;
+        }
+        if (!changed) {
+          changed =
+            clamped !== normalizedValue ||
+            (clamped === 0 && normalizedValue !== 0);
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [posts]);
+
+  const fullscreenPost = useMemo(() => {
+    if (!fullscreenPostKey) {
+      return null;
+    }
+    return posts.find((item) => item?.uri === fullscreenPostKey) || null;
+  }, [fullscreenPostKey, posts]);
+
+  const fullscreenActive = Boolean(fullscreenPost);
+
+  useEffect(() => {
+    if (fullscreenPostKey && !fullscreenPost) {
+      setFullscreenPostKey(null);
+      setFullscreenMediaIndex(0);
+    }
+  }, [fullscreenPostKey, fullscreenPost]);
+
+  useEffect(() => {
+    if (!fullscreenPostKey) {
+      return;
+    }
+    const nextIndex = mediaActiveIndexes[fullscreenPostKey] || 0;
+    setFullscreenMediaIndex((prev) => (prev === nextIndex ? prev : nextIndex));
+  }, [fullscreenPostKey, mediaActiveIndexes]);
 
   const clearRetryTimeout = useCallback(() => {
     if (retryTimeoutRef.current) {
@@ -149,6 +284,75 @@ function CloneTikTok() {
       shareTimeoutRef.current = null;
     }
   }, []);
+
+  const toggleFitModeForKey = useCallback((key) => {
+    if (!key) {
+      return;
+    }
+    setMediaFitModes((prev) => {
+      const previous = prev[key] || 'cover';
+      const next = previous === 'cover' ? 'contain' : 'cover';
+      if (next === 'cover') {
+        const { [key]: _omit, ...rest } = prev;
+        return rest;
+      }
+      return {
+        ...prev,
+        [key]: next,
+      };
+    });
+  }, []);
+
+  const handleMediaChangeForKey = useCallback((key, index) => {
+    if (!key) {
+      return;
+    }
+    const normalizedIndex = Number.isFinite(index)
+      ? Math.max(0, Math.floor(index))
+      : 0;
+    setMediaActiveIndexes((prev) => {
+      const previous = prev[key] ?? 0;
+      if (previous === normalizedIndex) {
+        return prev;
+      }
+      if (normalizedIndex === 0) {
+        if (!(key in prev)) {
+          return prev;
+        }
+        const { [key]: _omit, ...rest } = prev;
+        return rest;
+      }
+      return {
+        ...prev,
+        [key]: normalizedIndex,
+      };
+    });
+  }, []);
+
+  const closeFullscreen = useCallback(() => {
+    setFullscreenPostKey(null);
+    setFullscreenMediaIndex(0);
+  }, []);
+
+  const toggleActiveFitMode = useCallback(() => {
+    if (activeKey && activeHasMedia) {
+      toggleFitModeForKey(activeKey);
+    }
+  }, [activeKey, activeHasMedia, toggleFitModeForKey]);
+
+  const toggleActiveFullscreen = useCallback(() => {
+    if (!activeHasMedia || !activeKey) {
+      return;
+    }
+    setFullscreenPostKey((current) => {
+      if (current === activeKey) {
+        setFullscreenMediaIndex(0);
+        return null;
+      }
+      setFullscreenMediaIndex(activeMediaResolvedIndex);
+      return activeKey;
+    });
+  }, [activeHasMedia, activeKey, activeMediaResolvedIndex]);
 
   useEffect(() => {
     hasPostsRef.current = posts.length > 0;
@@ -179,6 +383,13 @@ function CloneTikTok() {
     }
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    if (fullscreenPostKey && fullscreenPostKey !== activeKey) {
+      setFullscreenPostKey(null);
+      setFullscreenMediaIndex(0);
+    }
+  }, [activeKey, fullscreenPostKey]);
+
   const fetchInitialFeed = useCallback(
     async ({ force = false } = {}) => {
       if (!force && !client.isAuthenticated()) {
@@ -198,7 +409,7 @@ function CloneTikTok() {
 
         if (initialPosts.length) {
           const interleavedPosts = interleavePostsByAuthor(initialPosts);
-          setPosts(interleavedPosts);
+          setPosts(sortPostsByDateDesc(interleavedPosts));
           setCursor(data.cursor || null);
           setHasMore(true);
           setIsRetrying(false);
@@ -284,7 +495,7 @@ function CloneTikTok() {
           const trimmed = combined.length > FEED_BUFFER_LIMIT
             ? combined.slice(combined.length - FEED_BUFFER_LIMIT)
             : combined;
-          return interleavePostsByAuthor(trimmed);
+          return sortPostsByDateDesc(interleavePostsByAuthor(trimmed));
         });
       } catch (_err) {
         setHasMore(true);
@@ -354,10 +565,320 @@ function CloneTikTok() {
         observer.observe(node);
       });
 
-    return () => {
+  return () => {
       observer.disconnect();
     };
   }, [showOnboardingFeed, posts, displayCount]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || displayCount <= 0) {
+      return undefined;
+    }
+
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const coarsePointerQuery =
+      typeof window.matchMedia === 'function'
+        ? window.matchMedia('(pointer: coarse)')
+        : null;
+    if (coarsePointerQuery && coarsePointerQuery.matches) {
+      return undefined;
+    }
+
+    let pointerId = null;
+    let isDragging = false;
+    let startY = 0;
+    let startX = 0;
+    let lastY = 0;
+    let lastX = 0;
+    let previousSnapType = '';
+    let scrollLocked = false;
+    let settleTimer = null;
+    let pointerCardIndex = -1;
+    let pointerCardKey = null;
+    let pointerCardImageCount = 0;
+    let pointerCardBaseIndex = 0;
+    let horizontalConsumed = false;
+
+    const interactiveSelectors =
+      'button, a, input, textarea, select, [data-prevent-desktop-swipe="true"]';
+
+    const isInteractiveTarget = (target) => {
+      if (!(target instanceof Element)) {
+        return false;
+      }
+      return Boolean(target.closest(interactiveSelectors));
+    };
+
+    const clampScroll = (value) => {
+      const maxScroll = container.scrollHeight - container.clientHeight;
+      if (maxScroll <= 0) {
+        return 0;
+      }
+      if (value < 0) {
+        return 0;
+      }
+      if (value > maxScroll) {
+        return maxScroll;
+      }
+      return value;
+    };
+
+    const disableSnap = () => {
+      if (!container.classList.contains('swipe-active')) {
+        previousSnapType = container.style.scrollSnapType;
+        container.style.scrollSnapType = 'none';
+        container.classList.add('swipe-active');
+      }
+    };
+
+    const restoreSnap = () => {
+      container.style.scrollSnapType = previousSnapType;
+      container.classList.remove('swipe-active');
+    };
+
+    const clearSettleTimer = () => {
+      if (settleTimer) {
+        clearTimeout(settleTimer);
+        settleTimer = null;
+      }
+    };
+
+    const scheduleSettle = (delay = 360) => {
+      clearSettleTimer();
+      settleTimer = window.setTimeout(() => {
+        settleTimer = null;
+        scrollLocked = false;
+        restoreSnap();
+      }, delay);
+    };
+
+    const scrollToCard = (index) => {
+      const node = cardRefs.current[index];
+      if (!node) {
+        return false;
+      }
+      container.scrollTo({
+        top: node.offsetTop,
+        behavior: 'smooth',
+      });
+      return true;
+    };
+
+    const startControlledScroll = (index, delay) => {
+      disableSnap();
+      scrollLocked = true;
+      const didScroll = scrollToCard(index);
+      scheduleSettle(delay ?? (didScroll ? 320 : 180));
+    };
+
+    const getSwipeThreshold = () =>
+      Math.min(160, Math.max(80, container.clientHeight * 0.2));
+    const getHorizontalThreshold = () =>
+      Math.min(220, Math.max(90, container.clientWidth * 0.18));
+
+    const handlePointerDown = (event) => {
+      if (event.pointerType && event.pointerType !== 'mouse' && event.pointerType !== 'pen') {
+        return;
+      }
+      if (event.button !== 0) {
+        return;
+      }
+      if (isInteractiveTarget(event.target)) {
+        return;
+      }
+
+      clearSettleTimer();
+      scrollLocked = false;
+      disableSnap();
+      pointerId = event.pointerId;
+      isDragging = true;
+      startY = event.clientY;
+      startX = event.clientX;
+      lastY = event.clientY;
+      lastX = event.clientX;
+      horizontalConsumed = false;
+      pointerCardIndex = -1;
+      pointerCardKey = null;
+      pointerCardImageCount = 0;
+      pointerCardBaseIndex = 0;
+
+      if (event.target instanceof Element) {
+        const cardNode = event.target.closest('[data-index]');
+        if (cardNode) {
+          const index = Number(cardNode.dataset.index);
+          if (!Number.isNaN(index)) {
+            pointerCardIndex = index;
+            const cardData = displayPosts[index];
+            if (cardData && !cardData.onboarding) {
+              const images = Array.isArray(cardData.images)
+                ? cardData.images.filter(Boolean)
+                : [];
+              pointerCardImageCount = images.length;
+              pointerCardKey = typeof cardData.uri === 'string' ? cardData.uri : null;
+              if (pointerCardKey) {
+                pointerCardBaseIndex =
+                  pointerCardKey === activeKey
+                    ? activeMediaResolvedIndex
+                    : mediaActiveIndexes[pointerCardKey] || 0;
+              }
+            }
+          }
+        }
+      }
+
+      container.setPointerCapture?.(pointerId);
+    };
+
+    const handlePointerMove = (event) => {
+      if (!isDragging || event.pointerId !== pointerId) {
+        return;
+      }
+      if (horizontalConsumed) {
+        return;
+      }
+      const totalDeltaX = event.clientX - startX;
+      const totalDeltaY = event.clientY - startY;
+      const deltaY = event.clientY - lastY;
+      lastX = event.clientX;
+      lastY = event.clientY;
+
+      if (
+        pointerCardImageCount > 1 &&
+        Math.abs(totalDeltaX) > Math.abs(totalDeltaY) &&
+        Math.abs(totalDeltaX) >= getHorizontalThreshold()
+      ) {
+        const direction = totalDeltaX < 0 ? 1 : -1;
+        const maxIndex = pointerCardImageCount - 1;
+        let nextIndex = pointerCardBaseIndex + direction;
+        if (nextIndex < 0) {
+          nextIndex = 0;
+        } else if (nextIndex > maxIndex) {
+          nextIndex = maxIndex;
+        }
+        if (pointerCardKey && nextIndex !== pointerCardBaseIndex) {
+          handleMediaChangeForKey(pointerCardKey, nextIndex);
+        }
+        horizontalConsumed = true;
+        clearSettleTimer();
+        container.releasePointerCapture?.(pointerId);
+        pointerId = null;
+        isDragging = false;
+        restoreSnap();
+        return;
+      }
+
+      const nextScroll = clampScroll(container.scrollTop - deltaY);
+      if (Math.abs(deltaY) > 0.5) {
+        event.preventDefault();
+      }
+      container.scrollTop = nextScroll;
+    };
+
+    const finishDrag = (event) => {
+      if (!isDragging || event.pointerId !== pointerId) {
+        return;
+      }
+      if (horizontalConsumed) {
+        horizontalConsumed = false;
+        return;
+      }
+
+      const delta = startY - event.clientY;
+      const threshold = getSwipeThreshold();
+
+      container.releasePointerCapture?.(pointerId);
+      isDragging = false;
+      pointerId = null;
+
+      let targetIndex = activeIndex;
+      if (displayCount > 1 && Math.abs(delta) >= threshold) {
+        targetIndex = delta > 0 ? activeIndex + 1 : activeIndex - 1;
+      }
+
+      if (targetIndex < 0) {
+        targetIndex = 0;
+      } else if (targetIndex > displayCount - 1) {
+        targetIndex = displayCount - 1;
+      }
+
+      requestAnimationFrame(() => {
+        startControlledScroll(targetIndex);
+      });
+    };
+
+    const handleWheel = (event) => {
+      if (isDragging || event.ctrlKey) {
+        return;
+      }
+      const deltaY = event.deltaY;
+      if (Math.abs(deltaY) < 8) {
+        return;
+      }
+      if (displayCount <= 1) {
+        return;
+      }
+      if (scrollLocked) {
+        return;
+      }
+
+      event.preventDefault();
+      clearSettleTimer();
+
+      const direction = deltaY > 0 ? 1 : -1;
+      let targetIndex = activeIndex + direction;
+      if (targetIndex < 0) {
+        targetIndex = 0;
+      } else if (targetIndex > displayCount - 1) {
+        targetIndex = displayCount - 1;
+      }
+
+      if (targetIndex === activeIndex) {
+        return;
+      }
+
+      startControlledScroll(targetIndex, 340);
+    };
+
+    const handlePointerUp = (event) => {
+      finishDrag(event);
+    };
+
+    const handlePointerCancel = (event) => {
+      finishDrag(event);
+    };
+
+    container.addEventListener('pointerdown', handlePointerDown);
+    container.addEventListener('pointermove', handlePointerMove, { passive: false });
+    container.addEventListener('pointerup', handlePointerUp);
+    container.addEventListener('pointercancel', handlePointerCancel);
+    container.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      if (pointerId != null) {
+        container.releasePointerCapture?.(pointerId);
+      }
+      clearSettleTimer();
+      scrollLocked = false;
+      restoreSnap();
+      container.removeEventListener('pointerdown', handlePointerDown);
+      container.removeEventListener('pointermove', handlePointerMove);
+      container.removeEventListener('pointerup', handlePointerUp);
+      container.removeEventListener('pointercancel', handlePointerCancel);
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, [
+    activeIndex,
+    displayCount,
+    displayPosts,
+    mediaActiveIndexes,
+    handleMediaChangeForKey,
+    activeKey,
+    activeMediaResolvedIndex,
+  ]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -750,13 +1271,7 @@ function CloneTikTok() {
   }, [isAuthenticated, loading, error, isRetrying, posts.length]);
 
   useEffect(() => {
-    const activePost = posts[activeIndex];
-    const primary = activePost?.images?.[0];
-    const newImage =
-      primary?.fullsize ||
-      primary?.thumb ||
-      activePost?.author?.avatar ||
-      '';
+    const newImage = activeMediaSource || '';
     const currentImage = ambientUseSlotA ? ambientSlotA : ambientSlotB;
     if (newImage === currentImage) {
       return;
@@ -767,7 +1282,7 @@ function CloneTikTok() {
       setAmbientSlotA(newImage);
     }
     setAmbientUseSlotA((useSlotA) => !useSlotA);
-  }, [posts, activeIndex, ambientUseSlotA, ambientSlotA, ambientSlotB]);
+  }, [activeMediaSource, ambientUseSlotA, ambientSlotA, ambientSlotB]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -809,12 +1324,44 @@ function CloneTikTok() {
           onTogglePins={() => setShowPins((value) => !value)}
           isAuthenticated={isAuthenticated}
           pinCount={pins.length}
+          onToggleFitMode={toggleActiveFitMode}
+          onToggleFullscreen={toggleActiveFullscreen}
+          fitMode={activeFitMode}
+          fullscreenActive={fullscreenActive}
+          mediaAvailable={activeHasMedia}
         />
         {!showOnboardingFeed && feedStatus ? (
-          <div className="feed-status">{feedStatus}</div>
+          <div
+            className={`feed-status${loading ? ' feed-status--loading' : ''}`}
+            aria-live="polite"
+          >
+            {loading ? (
+              <>
+                <div className="feed-status__dots" aria-hidden="true">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+                <span>{feedStatus}</span>
+              </>
+            ) : (
+              feedStatus
+            )}
+          </div>
         ) : null}
         {displayPosts.map((post, index) => {
           const key = post.uri || `onboarding-${index}`;
+          const cardFitMode = mediaFitModes[key] || 'cover';
+          const rawMediaIndex = mediaActiveIndexes[key] || 0;
+          const cardImages = Array.isArray(post.images)
+            ? post.images.filter(Boolean)
+            : [];
+          const maxCardMediaIndex =
+            cardImages.length > 0 ? cardImages.length - 1 : 0;
+          const cardMediaIndex = Math.min(
+            Math.max(0, rawMediaIndex),
+            maxCardMediaIndex,
+          );
           const setRef = (node) => {
             cardRefs.current[index] = node;
             if (node) {
@@ -834,23 +1381,26 @@ function CloneTikTok() {
             );
           }
 
-          return (
-            <ArtCard
-              key={key}
-              active={index === activeIndex}
-              post={post}
-              setCardRef={setRef}
-              onLike={() => handleLike(post)}
-              onComment={() => handleOpenComments(post)}
-              onShare={() => handleShare(post)}
-              onPin={() => handlePin(post)}
-              onFollow={handleFollow}
-              viewerDid={viewerDid}
-              onLoginRequest={handleLoginRequest}
-              pinned={isPinned(post.uri)}
-            />
-          );
-        })}
+        return (
+          <ArtCard
+            key={key}
+            active={index === activeIndex}
+            post={post}
+            setCardRef={setRef}
+            onLike={() => handleLike(post)}
+            onComment={() => handleOpenComments(post)}
+            onShare={() => handleShare(post)}
+            onPin={() => handlePin(post)}
+            onFollow={handleFollow}
+            viewerDid={viewerDid}
+            onLoginRequest={handleLoginRequest}
+            pinned={isPinned(post.uri)}
+            fitMode={cardFitMode}
+            mediaIndex={cardMediaIndex}
+            onMediaChange={(index) => handleMediaChangeForKey(key, index)}
+          />
+        );
+      })}
         {!showOnboardingFeed ? (
           <div ref={loadMoreRef} className="load-more-sentinel">
             {moreLoading && !loading ? 'Chargement de nouvelles oeuvres...' : ''}
@@ -883,6 +1433,12 @@ function CloneTikTok() {
         error={commentsError}
         onRetry={handleRetryComments}
         onOpenPost={handleOpenPostExternal}
+      />
+      <FullscreenViewer
+        open={fullscreenActive}
+        post={fullscreenPost}
+        mediaIndex={fullscreenMediaIndex}
+        onClose={closeFullscreen}
       />
       <ChangelogDialog
         open={showChangelog}

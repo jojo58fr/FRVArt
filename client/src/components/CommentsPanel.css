@@ -98,9 +98,14 @@
   border: none;
   border-radius: 12px;
   padding: 8px 12px;
-  background: rgba(117, 96, 255, 0.22);
-  color: #d9d9ff;
+  background: var(--accent-gradient);
+  color: var(--accent-on-color);
+  box-shadow: 0 16px 28px rgba(33, 26, 120, 0.4);
   cursor: pointer;
+}
+
+.comments-open-post:hover {
+  background: var(--accent-gradient-hover);
 }
 
 .comments-body {
@@ -123,12 +128,17 @@
 }
 
 .comments-message button {
-  border: none;
+  border: 1px solid var(--surface-outline-strong);
   border-radius: 999px;
   padding: 6px 16px;
-  background: rgba(255, 255, 255, 0.16);
-  color: inherit;
+  background: var(--surface-glass-strong);
+  color: var(--accent-on-color);
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.comments-message button:hover {
+  background: rgba(18, 18, 40, 0.78);
 }
 
 .comments-list {

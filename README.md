@@ -2,6 +2,9 @@
 
 FRVArt est une vitrine communautaire open source dediee aux creations VTubing francophones publiees sur Bluesky. L'application presente un flux type TikTok optimise pour l'exploration rapide des oeuvres, avec epingles locales, panneau de commentaires, et outils de partage.
 
+## Version
+- Version actuelle : **1.1.0** (Octobre 2024). Voir [client/CHANGELOG.md](client/CHANGELOG.md) pour la liste complete des evolutions.
+
 ## Fonctionnalites principales
 - Flux d'art dynamique filtre sur les hashtags #FRVArt et #VtuberFR.
 - Experience onboarding pour les visiteurs non connectes.

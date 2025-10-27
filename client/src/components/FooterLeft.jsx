@@ -1,7 +1,14 @@
 import React from 'react';
 import './FooterLeft.css';
 
-export default function FooterLeft({ author, text, indexedAt }) {
+export default function FooterLeft({
+  author,
+  text,
+  indexedAt,
+  mediaCount = 0,
+  mediaIndex = 0,
+  onSelectMedia,
+}) {
   const displayName = author?.displayName || author?.handle || 'Artiste';
   const handle = author?.handle ? `@${author.handle}` : '';
 
@@ -14,6 +21,14 @@ export default function FooterLeft({ author, text, indexedAt }) {
       })
     : '';
 
+  const showIndicators = mediaCount > 1;
+
+  const handleIndicatorClick = (index) => {
+    if (typeof onSelectMedia === 'function') {
+      onSelectMedia(index);
+    }
+  };
+
   return (
     <div className="footer-left">
       <div className="author">
@@ -24,7 +39,25 @@ export default function FooterLeft({ author, text, indexedAt }) {
         </div>
       </div>
       {text ? <p className="post-text">{text}</p> : null}
-      {formattedDate ? <span className="post-date">{formattedDate}</span> : null}
+      {formattedDate || showIndicators ? (
+        <div className="post-date-wrapper">
+          {formattedDate ? <span className="post-date">{formattedDate}</span> : null}
+          {showIndicators ? (
+            <div className="post-indicators" role="tablist" aria-label="Selection du visuel">
+              {Array.from({ length: mediaCount }).map((_, index) => (
+                <button
+                  key={`media-dot-${index}`}
+                  type="button"
+                  className={`post-indicator${index === mediaIndex ? ' active' : ''}`}
+                  aria-label={`Afficher l'image ${index + 1} sur ${mediaCount}`}
+                  aria-pressed={index === mediaIndex}
+                  onClick={() => handleIndicatorClick(index)}
+                />
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
