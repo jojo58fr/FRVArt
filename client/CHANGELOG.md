@@ -7,6 +7,7 @@ Toutes les nouveautes notables de FRVArt sont consignees ici. Les entrees les pl
 - Navigation horizontale sur les posts multi-images avec gestes, clavier et indicateurs synchronises.
 - Chargement du flux enrichi d'un indicateur visuel (loader a points) pendant la recuperation des posts.
 - Ajustements UI : sous-titre FRVArt toujours visible et options media masquees pour les visiteurs non connectes.
+- Virtualisation du flux via react-window pour recycler un pool restreint de cartes et reduire l'empreinte DOM.
 
 ## [1.0.2] - Octobre 2024 (FIX)
 - Amelioration des criteres de selection des posts pour un meilleur filtrage et pertinence.

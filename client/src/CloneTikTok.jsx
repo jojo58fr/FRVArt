@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { FixedSizeList as VirtualizedList } from 'react-window';
 
 import ArtCard from './components/ArtCard';
 import OnboardingCard from './components/OnboardingCard';
@@ -117,6 +118,67 @@ const sortPostsByDateDesc = (items) => {
   });
 };
 
+const ListOuterContext = React.createContext(null);
+
+const VirtualizedOuter = React.forwardRef(
+  ({ className, children, ...rest }, forwardedRef) => {
+    const contextValue = React.useContext(ListOuterContext);
+    const { containerRef: providedRef, topNode, statusNode, bottomNode } =
+      contextValue || {};
+    const mergedClassName = ['container', className].filter(Boolean).join(' ');
+
+    return (
+      <div
+        {...rest}
+        className={mergedClassName}
+        ref={(node) => {
+          if (typeof forwardedRef === 'function') {
+            forwardedRef(node);
+          } else if (forwardedRef) {
+            forwardedRef.current = node;
+          }
+          if (providedRef) {
+            providedRef.current = node;
+          }
+        }}
+      >
+        {topNode}
+        {statusNode}
+        {children}
+        {bottomNode}
+      </div>
+    );
+  },
+);
+
+VirtualizedOuter.displayName = 'VirtualizedOuter';
+
+const resolveViewport = () => {
+  if (typeof window === 'undefined') {
+    return {
+      height: 800,
+      width: 480,
+    };
+  }
+
+  const visualViewport = window.visualViewport;
+  const rawHeight = visualViewport?.height ?? window.innerHeight ?? 800;
+  const rawWidth = visualViewport?.width ?? window.innerWidth ?? 480;
+  const isCoarsePointer =
+    window.matchMedia?.('(pointer: coarse)').matches ?? false;
+
+  const heightAdjustment = isCoarsePointer ? 0 : 48;
+  const adjustedHeight = Math.max(360, rawHeight - heightAdjustment);
+  const adjustedWidth = isCoarsePointer
+    ? rawWidth
+    : Math.min(rawWidth, 480);
+
+  return {
+    height: Number.isFinite(adjustedHeight) ? adjustedHeight : 800,
+    width: Number.isFinite(adjustedWidth) ? adjustedWidth : 480,
+  };
+};
+
 function CloneTikTok() {
   const { client, isAuthenticated, pins, session } = useContext(BlueskyContext);
   const viewerDid = session?.did || null;
@@ -146,10 +208,12 @@ function CloneTikTok() {
   const [mediaActiveIndexes, setMediaActiveIndexes] = useState({});
   const [fullscreenPostKey, setFullscreenPostKey] = useState(null);
   const [fullscreenMediaIndex, setFullscreenMediaIndex] = useState(0);
+  const initialViewport = resolveViewport();
+  const [viewportHeight, setViewportHeight] = useState(initialViewport.height);
+  const [viewportWidth, setViewportWidth] = useState(initialViewport.width);
 
   const containerRef = useRef(null);
-  const cardRefs = useRef([]);
-  const loadMoreRef = useRef(null);
+  const listRef = useRef(null);
   const retryTimeoutRef = useRef(null);
   const hasPostsRef = useRef(false);
   const shareTimeoutRef = useRef(null);
@@ -356,18 +420,40 @@ function CloneTikTok() {
 
   useEffect(() => {
     hasPostsRef.current = posts.length > 0;
-    cardRefs.current.length = displayCount;
-  }, [posts.length, displayCount]);
+  }, [posts.length]);
 
   useEffect(() => {
     if (showOnboardingFeed) {
       setActiveIndex(0);
     }
-    const container = containerRef.current;
-    if (container) {
-      container.scrollTop = 0;
-    }
   }, [showOnboardingFeed]);
+
+  useEffect(() => {
+    if (!listRef.current) {
+      return;
+    }
+    listRef.current.scrollToItem(0, 'start');
+  }, [showOnboardingFeed, displayCount]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+    const handleResize = () => {
+      const { height, width } = resolveViewport();
+      setViewportHeight(height);
+      setViewportWidth(width);
+    };
+    window.addEventListener('resize', handleResize);
+    const visualViewport = window.visualViewport;
+    visualViewport?.addEventListener('resize', handleResize);
+    visualViewport?.addEventListener('scroll', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      visualViewport?.removeEventListener('resize', handleResize);
+      visualViewport?.removeEventListener('scroll', handleResize);
+    };
+  }, []);
 
   useEffect(
     () => () => {
@@ -521,56 +607,6 @@ function CloneTikTok() {
     ]);
 
   useEffect(() => {
-    if (!loadMoreRef.current) return;
-    const sentinel = loadMoreRef.current;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            handleLoadMore();
-          }
-        });
-      },
-      { threshold: 0.2 },
-    );
-    observer.observe(sentinel);
-    return () => observer.unobserve(sentinel);
-  }, [handleLoadMore]);
-
-  useEffect(() => {
-    const items = showOnboardingFeed ? onboardingCards : posts;
-    if (!items.length) {
-      return;
-    }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const index = Number(entry.target.dataset.index);
-            if (!Number.isNaN(index)) {
-              setActiveIndex(index);
-            }
-          }
-        });
-      },
-      {
-        threshold: 0.6,
-      },
-    );
-
-    cardRefs.current
-      .slice(0, items.length)
-      .filter(Boolean)
-      .forEach((node) => {
-        observer.observe(node);
-      });
-
-  return () => {
-      observer.disconnect();
-    };
-  }, [showOnboardingFeed, posts, displayCount]);
-
-  useEffect(() => {
     const container = containerRef.current;
     if (!container || displayCount <= 0) {
       return undefined;
@@ -656,15 +692,12 @@ function CloneTikTok() {
       }, delay);
     };
 
-    const scrollToCard = (index) => {
-      const node = cardRefs.current[index];
-      if (!node) {
+    const scrollToCard = (index, align = 'start') => {
+      if (!listRef.current) {
         return false;
       }
-      container.scrollTo({
-        top: node.offsetTop,
-        behavior: 'smooth',
-      });
+      const clampedIndex = Math.min(Math.max(index, 0), displayCount - 1);
+      listRef.current.scrollToItem(clampedIndex, align);
       return true;
     };
 
@@ -879,6 +912,50 @@ function CloneTikTok() {
     activeKey,
     activeMediaResolvedIndex,
   ]);
+
+  const handleItemsRendered = useCallback(
+    ({ visibleStartIndex, visibleStopIndex }) => {
+      if (displayCount === 0) {
+        return;
+      }
+      const nextIndex = Math.min(
+        displayCount - 1,
+        Math.max(0, visibleStartIndex),
+      );
+      if (nextIndex !== activeIndex) {
+        setActiveIndex(nextIndex);
+      }
+      if (
+        !showOnboardingFeed &&
+        hasMore &&
+        !moreLoading &&
+        !loading &&
+        visibleStopIndex >= displayCount - 3
+      ) {
+        handleLoadMore();
+      }
+    },
+    [
+      displayCount,
+      activeIndex,
+      showOnboardingFeed,
+      hasMore,
+      moreLoading,
+      loading,
+      handleLoadMore,
+    ],
+  );
+
+  const itemKey = useCallback(
+    (index) => {
+      const post = displayPosts[index];
+      if (!post) {
+        return `void-${index}`;
+      }
+      return post.uri || `onboarding-${index}`;
+    },
+    [displayPosts],
+  );
 
   useEffect(() => {
     const container = containerRef.current;
@@ -1200,6 +1277,10 @@ function CloneTikTok() {
     [handleLoginRequest, handleOpenChangelog],
   );
 
+  const togglePins = useCallback(() => {
+    setShowPins((value) => !value);
+  }, []);
+
   const handleLogin = useCallback(
     async (credentials) => {
       setLoginError('');
@@ -1251,6 +1332,93 @@ function CloneTikTok() {
     [pins],
   );
 
+  const renderVirtualizedItem = useCallback(
+    ({ index, style }) => {
+      const post = displayPosts[index];
+      if (!post) {
+        return null;
+      }
+      const key = post.uri || `onboarding-${index}`;
+      const cardFitMode = mediaFitModes[key] || 'cover';
+      const rawMediaIndex = mediaActiveIndexes[key] || 0;
+      const cardImages = Array.isArray(post.images)
+        ? post.images.filter(Boolean)
+        : [];
+      const maxCardMediaIndex =
+        cardImages.length > 0 ? cardImages.length - 1 : 0;
+      const cardMediaIndex = Math.min(
+        Math.max(0, rawMediaIndex),
+        maxCardMediaIndex,
+      );
+      const itemStyle = {
+        ...style,
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+      };
+
+      if (post.onboarding) {
+        return (
+          <div
+            style={itemStyle}
+            data-index={index}
+            data-key={key}
+            className="virtualized-card"
+          >
+            <OnboardingCard
+              key={key}
+              card={post}
+              active={index === activeIndex}
+              handlers={onboardingActionHandlers}
+            />
+          </div>
+        );
+      }
+
+      return (
+        <div
+          style={itemStyle}
+          data-index={index}
+          data-key={key}
+          className="virtualized-card"
+        >
+          <ArtCard
+            key={key}
+            active={index === activeIndex}
+            post={post}
+            onLike={() => handleLike(post)}
+            onComment={() => handleOpenComments(post)}
+            onShare={() => handleShare(post)}
+            onPin={() => handlePin(post)}
+            onFollow={handleFollow}
+            viewerDid={viewerDid}
+            onLoginRequest={handleLoginRequest}
+            pinned={isPinned(post.uri)}
+            fitMode={cardFitMode}
+            mediaIndex={cardMediaIndex}
+            onMediaChange={(value) => handleMediaChangeForKey(key, value)}
+          />
+        </div>
+      );
+    },
+    [
+      displayPosts,
+      mediaFitModes,
+      mediaActiveIndexes,
+      activeIndex,
+      onboardingActionHandlers,
+      handleLike,
+      handleOpenComments,
+      handleShare,
+      handlePin,
+      handleFollow,
+      viewerDid,
+      handleLoginRequest,
+      isPinned,
+      handleMediaChangeForKey,
+    ],
+  );
+
   const feedStatus = useMemo(() => {
     if (!isAuthenticated) {
       return '';
@@ -1269,6 +1437,75 @@ function CloneTikTok() {
     }
       return '';
   }, [isAuthenticated, loading, error, isRetrying, posts.length]);
+
+  const feedStatusNode = useMemo(() => {
+    if (showOnboardingFeed || !feedStatus) {
+      return null;
+    }
+    return (
+      <div
+        className={`feed-status${loading ? ' feed-status--loading' : ''}`}
+        aria-live="polite"
+      >
+        {loading ? (
+          <>
+            <div className="feed-status__dots" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <span>{feedStatus}</span>
+          </>
+        ) : (
+          feedStatus
+        )}
+      </div>
+    );
+  }, [showOnboardingFeed, feedStatus, loading]);
+
+  const topNavbarElement = useMemo(
+    () => (
+      <TopNavbar
+        onLoginClick={handleLoginRequest}
+        onLogout={handleLogout}
+        onTogglePins={togglePins}
+        isAuthenticated={isAuthenticated}
+        pinCount={pins.length}
+        onToggleFitMode={toggleActiveFitMode}
+        onToggleFullscreen={toggleActiveFullscreen}
+        fitMode={activeFitMode}
+        fullscreenActive={fullscreenActive}
+        mediaAvailable={activeHasMedia}
+      />
+    ),
+    [
+      handleLoginRequest,
+      handleLogout,
+      togglePins,
+      isAuthenticated,
+      pins.length,
+      toggleActiveFitMode,
+      toggleActiveFullscreen,
+      activeFitMode,
+      fullscreenActive,
+      activeHasMedia,
+    ],
+  );
+
+  const bottomNavbarElement = useMemo(
+    () => <BottomNavbar className="bottom-navbar" />,
+    [],
+  );
+
+  const outerContextValue = useMemo(
+    () => ({
+      containerRef,
+      topNode: topNavbarElement,
+      statusNode: feedStatusNode,
+      bottomNode: bottomNavbarElement,
+    }),
+    [topNavbarElement, feedStatusNode, bottomNavbarElement],
+  );
 
   useEffect(() => {
     const newImage = activeMediaSource || '';
@@ -1317,97 +1554,21 @@ function CloneTikTok() {
       }}
     >
       <div className="blur"></div>
-      <div className="container" ref={containerRef}>
-        <TopNavbar
-          onLoginClick={handleLoginRequest}
-          onLogout={handleLogout}
-          onTogglePins={() => setShowPins((value) => !value)}
-          isAuthenticated={isAuthenticated}
-          pinCount={pins.length}
-          onToggleFitMode={toggleActiveFitMode}
-          onToggleFullscreen={toggleActiveFullscreen}
-          fitMode={activeFitMode}
-          fullscreenActive={fullscreenActive}
-          mediaAvailable={activeHasMedia}
-        />
-        {!showOnboardingFeed && feedStatus ? (
-          <div
-            className={`feed-status${loading ? ' feed-status--loading' : ''}`}
-            aria-live="polite"
-          >
-            {loading ? (
-              <>
-                <div className="feed-status__dots" aria-hidden="true">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-                <span>{feedStatus}</span>
-              </>
-            ) : (
-              feedStatus
-            )}
-          </div>
-        ) : null}
-        {displayPosts.map((post, index) => {
-          const key = post.uri || `onboarding-${index}`;
-          const cardFitMode = mediaFitModes[key] || 'cover';
-          const rawMediaIndex = mediaActiveIndexes[key] || 0;
-          const cardImages = Array.isArray(post.images)
-            ? post.images.filter(Boolean)
-            : [];
-          const maxCardMediaIndex =
-            cardImages.length > 0 ? cardImages.length - 1 : 0;
-          const cardMediaIndex = Math.min(
-            Math.max(0, rawMediaIndex),
-            maxCardMediaIndex,
-          );
-          const setRef = (node) => {
-            cardRefs.current[index] = node;
-            if (node) {
-              node.dataset.index = String(index);
-            }
-          };
-
-          if (post.onboarding) {
-            return (
-              <OnboardingCard
-                key={key}
-                card={post}
-                active={index === activeIndex}
-                setCardRef={setRef}
-                handlers={onboardingActionHandlers}
-              />
-            );
-          }
-
-        return (
-          <ArtCard
-            key={key}
-            active={index === activeIndex}
-            post={post}
-            setCardRef={setRef}
-            onLike={() => handleLike(post)}
-            onComment={() => handleOpenComments(post)}
-            onShare={() => handleShare(post)}
-            onPin={() => handlePin(post)}
-            onFollow={handleFollow}
-            viewerDid={viewerDid}
-            onLoginRequest={handleLoginRequest}
-            pinned={isPinned(post.uri)}
-            fitMode={cardFitMode}
-            mediaIndex={cardMediaIndex}
-            onMediaChange={(index) => handleMediaChangeForKey(key, index)}
-          />
-        );
-      })}
-        {!showOnboardingFeed ? (
-          <div ref={loadMoreRef} className="load-more-sentinel">
-            {moreLoading && !loading ? 'Chargement de nouvelles oeuvres...' : ''}
-          </div>
-        ) : null}
-        <BottomNavbar className="bottom-navbar" />
-      </div>
+      <ListOuterContext.Provider value={outerContextValue}>
+        <VirtualizedList
+          height={viewportHeight}
+          width={viewportWidth}
+          itemCount={displayCount}
+          itemSize={viewportHeight}
+          ref={listRef}
+          outerElementType={VirtualizedOuter}
+          onItemsRendered={handleItemsRendered}
+          overscanCount={2}
+          itemKey={itemKey}
+        >
+          {renderVirtualizedItem}
+        </VirtualizedList>
+      </ListOuterContext.Provider>
       <LoginDialog
         open={showLogin}
         onClose={handleCloseLogin}
@@ -1452,4 +1613,3 @@ function CloneTikTok() {
 }
 
 export default CloneTikTok;
-
