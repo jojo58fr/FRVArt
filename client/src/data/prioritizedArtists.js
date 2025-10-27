@@ -1,6 +1,16 @@
 // List of prioritized artist DIDs
 const prioritizedArtists = [
   // Add DIDs here, e.g. 'did:plc:example'
+  'did:plc:hmeyhotz4gapyr6uoewxw2kh',
+  'did:plc:6civmcifgfyryo37fbfmo44k',
+  'did:plc:2js5gmqzcfe777qzar76nlts',
+  'did:plc:bjqsmrkcd6ogtgowxfp7xgrj',
+  'did:plc:3nthv2zwarhd4ita3pom2k3y',
+  'did:plc:uhcdhnh7tyvrwg74bcpxtx7z',
+  'did:plc:3kmw6dhbp3u2zyqh4qzvp7ce',
+  'did:plc:yjq4zltu6xfs7zjfg7a7piea',
+  'did:plc:m4uys5jd7ez4lgv56auwa22d',
+  'did:plc:kdlydduthw7gynokkhz2a2n6',
   'did:plc:gcjpoufhhhpnoeeajcppgwb6',
   'did:plc:7mqqgrhapxm2hbf73xeo2wk6',
   'did:plc:e25klptq6pkdcq2rgohim6lt',
